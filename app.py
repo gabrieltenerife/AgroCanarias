@@ -1,13 +1,10 @@
-from langchain.tools import tool, ToolRuntime
-from langchain.messages import HumanMessage, SystemMessage
-from langchain_ollama import OllamaEmbeddings, ChatOllama
-from langchain_chroma import Chroma
-from langchain.agents import create_agent
 from langgraph.checkpoint.memory import InMemorySaver
+from langchain.tools import tool
+from langchain.messages import HumanMessage
+from langchain_ollama import ChatOllama
+from langchain.agents import create_agent
 
 from Rag.Retriever import conectar_crhroma
-
-
 
 @tool()
 def obtener_info_rag(pregunta: str):
@@ -18,9 +15,6 @@ def obtener_info_rag(pregunta: str):
 
     retriever = conectar_crhroma()
     return retriever.invoke(pregunta)
-
-
-
 
 def hablarConChat(agente):
     while (prompt := input("> ")) != "end":
@@ -45,8 +39,7 @@ def hablarConChat(agente):
             ultimo_mensaje.pretty_print()
 
 
-
-def crearAgente():
+def Agente():
     modelo = ChatOllama(model="gemma4:26b")
     agente = create_agent(
     
@@ -62,5 +55,5 @@ def crearAgente():
 
     return agente
 
-agente = crearAgente()
+agente = Agente()
 hablarConChat(agente)
