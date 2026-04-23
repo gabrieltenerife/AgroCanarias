@@ -1,3 +1,4 @@
+import os
 from langchain_community.document_loaders import PyPDFLoader
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -13,18 +14,26 @@ CHROMA_DIR = "Chroma_db"
 COLLECTION_NAME = "Documents"
 
 
-def cargar_documentos(fichero: str):
-
-    file_path = "EjemplosRAG/ficheros/recetario_canario.pdf"
-    loader = PyPDFLoader(file_path)
-
-    documentos = loader.load() # cargamos el documento
+def cargar_documentos(carpeta: str):
+   
+    documentos = []
+    
+    # Iterar sobre todos los archivos en la carpeta
+    for archivo in os.listdir(carpeta):
+            ruta_completa = os.path.join(carpeta, archivo)
+            
+            try:
+                loader = PyPDFLoader(ruta_completa)
+                docs = loader.load()
+                documentos.extend(docs) 
+            except Exception as e:
+                print("Error al cargar el archivo:", ruta_completa)
+        
+            
+    print(f"Total de documentos cargados: {len(documentos)}")
     return documentos
 
 
-"""
-Creamos los embeddings
-"""
 def crear_embeddings():
 
     embeddings = OllamaEmbeddings(
@@ -34,10 +43,6 @@ def crear_embeddings():
     return embeddings
 
 
-"""
-Añadimos los embeddings a Chroma
-
-"""
 def crear_vectorstore(embeddings,documentos):
 
 
@@ -46,7 +51,7 @@ def crear_vectorstore(embeddings,documentos):
 
 
     #Almacen padre
-    DOCUMENTOS_PADRE = LocalFileStore("./documentos_padre")
+    DOCUMENTOS_PADRE = LocalFileStore("Chroma_db/documentos_padre")
 
     #Almacen hijo
 
@@ -69,7 +74,7 @@ def crear_vectorstore(embeddings,documentos):
 
 def main():
 
-    documentos = cargar_documentos("/home/inta/Documentos/RAG/EjemplosRAG/RAG/xokas.txt")
+    documentos = cargar_documentos("Data")
     emmbedding = crear_embeddings()
     crear_vectorstore(emmbedding, documentos)
     
