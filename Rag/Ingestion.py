@@ -15,22 +15,31 @@ COLLECTION_NAME = "Documents"
 
 
 def cargar_documentos(carpeta: str):
-   
     documentos = []
+    archivos_procesados = 0
     
-    # Iterar sobre todos los archivos en la carpeta
+    # Verificamos si la carpeta existe
+    if not os.path.exists(carpeta):
+        print(f"La carpeta {carpeta} no existe.")
+        return []
+
     for archivo in os.listdir(carpeta):
+        
+        if archivo.lower().endswith(".pdf"):
             ruta_completa = os.path.join(carpeta, archivo)
             
             try:
                 loader = PyPDFLoader(ruta_completa)
                 docs = loader.load()
                 documentos.extend(docs) 
+                archivos_procesados += 1
+                print(f"Cargado: {archivo} ({len(docs)} páginas)")
             except Exception as e:
-                print("Error al cargar el archivo:", ruta_completa)
+                print(f"Error al cargar {archivo}: {e}")
         
-            
-    print(f"Total de documentos cargados: {len(documentos)}")
+
+    print(f"Total de archivos PDF procesados: {archivos_procesados}")
+    
     return documentos
 
 
