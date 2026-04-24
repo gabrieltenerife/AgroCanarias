@@ -6,7 +6,7 @@ from langchain.agents import create_agent
 import asyncio
 
 from Rag.Retriever import conectar_crhroma
-from Integrations.aemet import obtener_herramientas
+from Integrations.Mpcs import obtener_herramientas
 
 @tool()
 def obtener_info_rag(pregunta: str):
@@ -42,7 +42,7 @@ async def hablarConChat(agente):
 
 
 def Agente(tools: list = []):
-    modelo = ChatOllama(model="gemma4:26b", num_ctx=16000)
+    modelo = ChatOllama(model="gemma4:26b", num_ctx=100000)
     agente = create_agent(
     
     model=modelo,

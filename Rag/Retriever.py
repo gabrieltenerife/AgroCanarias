@@ -1,13 +1,6 @@
-from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_ollama import OllamaEmbeddings, ChatOllama
+from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
-from langchain.agents import create_agent
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.vectorstores import VectorStoreRetriever
-from langchain.tools import tool, ToolRuntime
-from langchain.messages import HumanMessage, SystemMessage
-
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from  langchain_classic.retrievers import ParentDocumentRetriever
 from langchain_classic.storage import LocalFileStore
