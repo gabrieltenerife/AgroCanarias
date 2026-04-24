@@ -3,8 +3,10 @@ from langchain.tools import tool
 from langchain.messages import HumanMessage
 from langchain_ollama import ChatOllama
 from langchain.agents import create_agent
+import asyncio
 
 from Rag.Retriever import conectar_crhroma
+from Integrations.aemet import obtener_herramientas
 
 @tool()
 def obtener_info_rag(pregunta: str):
@@ -16,9 +18,9 @@ def obtener_info_rag(pregunta: str):
     retriever = conectar_crhroma()
     return retriever.invoke(pregunta)
 
-def hablarConChat(agente):
+async def hablarConChat(agente):
     while (prompt := input("> ")) != "end":
-        for paso in agente.stream(
+        async for paso in agente.astream(
             {
                 "messages": [HumanMessage(prompt)]
             },
@@ -39,12 +41,12 @@ def hablarConChat(agente):
             ultimo_mensaje.pretty_print()
 
 
-def Agente():
-    modelo = ChatOllama(model="gemma4:26b")
+def Agente(tools: list = []):
+    modelo = ChatOllama(model="gemma4:26b", num_ctx=16000)
     agente = create_agent(
     
     model=modelo,
-    tools=[obtener_info_rag],
+    tools=tools + [obtener_info_rag],
     checkpointer=InMemorySaver(),
 
     system_prompt = """
@@ -55,5 +57,9 @@ def Agente():
 
     return agente
 
-agente = Agente()
-hablarConChat(agente)
+
+
+tools, _, resources = asyncio.run(obtener_herramientas())
+
+agente = Agente(tools=tools)
+asyncio.run(hablarConChat(agente))
