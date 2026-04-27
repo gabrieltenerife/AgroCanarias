@@ -62,16 +62,15 @@ class BusquedaFitosanitarioInput(BaseModel):
     query: str = Field(description="Plaga, enfermedad o producto a buscar.")
     cultivo: Optional[Literal["platano", "tomate", "papa", "pimiento", "otros"]] = Field(default=None)
 
-class BusquedaAyudasInput(BaseModel):
-    query: str = Field(description="Tipo de subvención o ayuda a buscar.")
-    
 
 # 3. DEFINICIÓN DE TOOLS CON FILTRO Y ESQUEMA PYDANTIC
 # ==========================================
 @tool("buscar_fitosanitarios", args_schema=BusquedaFitosanitarioInput)
 def tool_buscar_fitosanitarios(query: str, cultivo: Optional[str] = None) -> str:
     """Busca exclusivamente información sobre productos fitosanitarios y plagas."""
-    # Forzamos la categoría y pasamos el cultivo opcional
+    
+    
+    #Para elegir los filtros consultar la class Metadata en Ingestion
     filtros = {"categoria": "fitosanitario", "cultivo": cultivo}
     return motor_busqueda_chroma(query, filtros)
 
