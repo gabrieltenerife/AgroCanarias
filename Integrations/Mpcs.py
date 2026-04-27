@@ -1,20 +1,10 @@
-import asyncio
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain.agents import create_agent
-from langchain_ollama import ChatOllama
-from langchain_core.messages import HumanMessage
-from langchain.tools import tool
-import json
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
-
 api = os.getenv('Aemet_apiKey')
-
-print(api)
-from textwrap import indent
-
+api_tavily = os.getenv('Tavily_apiKey')
 
 
 
@@ -32,8 +22,21 @@ async def obtener_herramientas():
                 "-e", f"AEMET_API_KEY={api}",
                 "aemet-mcp"
             ]
+        },
+        
+         "tavily-mcp": {
+            "transport": "stdio", # stdio
+            "command": "npx",
+            "args": ["-y", "tavily-mcp@latest"],
+            "env": {
+                "TAVILY_API_KEY": api_tavily,
+                "DEFAULT_PARAMETERS": "{\"include_images\": true, \"max_results\": 15, \"search_depth\": \"advanced\"}"
+            }
         }
+        
     }
+    
+    
     )
 
     # Nos descargamos las herramientas
