@@ -8,8 +8,61 @@ from langchain_classic.retrievers import ParentDocumentRetriever
 from langchain_classic.storage import LocalFileStore
 from langchain_classic.storage._lc_store import create_kv_docstore
 
+from typing import Literal
+from langchain_ollama import ChatOllama
+from lmstudio import llm
+from pydantic import BaseModel, Field
+
 CHROMA_DIR = "Chroma_db"
 COLLECTION_NAME = "Documents"
+
+class Metadata(BaseModel):
+    categoria: Literal[
+        "fitosanitario", 
+        "ayuda", 
+        "dop", 
+        "cuaderno", 
+        "exportacion", 
+        "otros"
+    ] = Field(description="Tipo de documento")
+
+    cultivo: Literal[
+        "platano", 
+        "tomate", 
+        "papa", 
+        "pimiento", 
+        "otros"
+    ] = Field(description="Cultivo principal del documento")
+    
+
+llm = ChatOllama(
+    model="gemma4:26b",
+    temperature=0
+)
+llm_structured = llm.with_structured_output(Metadata)
+
+
+def extraer_metadata_llm(texto: str) -> Metadata:
+    prompt = f"""
+    Analiza este documento agrícola y extrae:
+
+    - categoria: fitosanitario, ayuda, dop, cuaderno, exportacion u otros
+    - cultivo: platano, tomate, papa, pimiento u otros
+
+    IMPORTANTE:
+    - Responde solo con los valores correctos
+    - Si no estás seguro, usa "otros"
+
+    Texto:
+    {texto}
+    """
+
+    try:
+        metadata = llm_structured.invoke(prompt)
+        return metadata
+    except Exception as e:
+        print(f"Error extrayendo metadata: {e}")
+        return Metadata(categoria="otros", cultivo="otros")
 
 
 def cargar_documentos(carpeta: str):
@@ -29,9 +82,22 @@ def cargar_documentos(carpeta: str):
             try:
                 loader = PyPDFLoader(ruta_completa)
                 docs = loader.load()
+
+                # 🔥 EXTRAER METADATA CON LLM (solo primer chunk)
+                texto_base = docs[0].page_content[:1500]
+                metadata_llm = extraer_metadata_llm(texto_base)
+
+                print(f"Metadata detectada para {archivo}: {metadata_llm}")
+
+                # 🔥 AÑADIR METADATA A TODOS LOS DOCS
+                for doc in docs:
+                    doc.metadata["categoria"] = metadata_llm.categoria
+                    doc.metadata["cultivo"] = metadata_llm.cultivo
+
                 documentos.extend(docs) 
                 archivos_procesados += 1
                 print(f"Cargado: {archivo} ({len(docs)} páginas)")
+
             except Exception as e:
                 print(f"Error al cargar {archivo}: {e}")
         
@@ -77,7 +143,7 @@ def crear_vectorstore(embeddings,documentos):
 
     rag.add_documents(documentos)
     
-    return rag
+    return rag, vectorstore
 
 def main():
 
