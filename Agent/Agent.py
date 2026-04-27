@@ -2,7 +2,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langchain_ollama import ChatOllama
 from langchain.agents import create_agent
 
-from Agent.Tools import obtener_info_rag, tool_buscar_fitosanitarios
+from Agent.Tools import obtener_info_rag, tool_buscar_ayudas, tool_buscar_fitosanitarios
 
 system_prompt = """ Eres un agente que responde preguntas utilizando tools y respondiendo del rag exclusivamente.
 Si no sabes la respuesta, responde que no tienes la información en lugar de inventar una respuesta"""
@@ -12,7 +12,7 @@ def Agente(tools: list = []):
     agente = create_agent(
     
     model=modelo,
-    tools=tools + [obtener_info_rag, tool_buscar_fitosanitarios],
+    tools=tools + [obtener_info_rag, tool_buscar_fitosanitarios, tool_buscar_ayudas],
     checkpointer=InMemorySaver(),
 
     system_prompt = system_prompt

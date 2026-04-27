@@ -16,24 +16,86 @@ from pydantic import BaseModel, Field
 CHROMA_DIR = "Chroma_db"
 COLLECTION_NAME = "Documents"
 
+from pydantic import BaseModel, Field
+from typing import Literal, Optional
+
+from pydantic import BaseModel, Field
+from typing import Literal, Optional
+
+
 class Metadata(BaseModel):
     categoria: Literal[
-        "fitosanitario", 
-        "ayuda", 
-        "dop", 
-        "cuaderno", 
-        "exportacion", 
+        "fitosanitario",
+        "ayuda",
+        "dop",
+        "cuaderno",
+        "exportacion",
         "otros"
-    ] = Field(description="Tipo de documento")
+    ] = Field(description="Tipo de documento según su contenido principal")
 
     cultivo: Literal[
-        "platano", 
-        "tomate", 
-        "papa", 
-        "pimiento", 
+        "platano",
+        "tomate",
+        "papa",
+        "pimiento",
         "otros"
-    ] = Field(description="Cultivo principal del documento")
-    
+    ] = Field(description="Cultivo principal al que hace referencia el documento")
+
+    isla: Optional[Literal[
+        "tenerife",
+        "gran_canaria",
+        "la_palma",
+        "lanzarote",
+        "fuerteventura",
+        "la_gomera",
+        "el_hierro",
+        "todas"
+    ]] = Field(default=None, description="Isla a la que aplica la normativa o convocatoria, si procede")
+
+    tipo_produccion: Optional[Literal[
+        "convencional",
+        "integrada",
+        "ecologica"
+    ]] = Field(default=None, description="Modalidad de producción a la que aplica el documento")
+
+    tipo_certificacion: Optional[Literal[
+        "convencional",
+        "integrada",
+        "ecologica",
+        "globalGAP"
+    ]] = Field(default=None, description="Certificación a la que aplica el documento, relevante para cuaderno de campo y auditorías")
+
+    dop: Optional[Literal[
+        "platano_canarias",
+        "papas_antiguas",
+        "miel_tenerife",
+        "vino_denominacion",
+        "otras"
+    ]] = Field(default=None, description="Denominación de Origen o IGP a la que hace referencia el documento")
+
+    mercado_destino: Optional[Literal[
+        "union_europea",
+        "reino_unido",
+        "eeuu",
+        "otros"
+    ]] = Field(default=None, description="Mercado de destino, relevante para documentos de exportación")
+
+    organismo: Optional[Literal[
+        "mapa",
+        "gobierno_canarias",
+        "fega",
+        "consejo_regulador",
+        "icex",
+        "eur_lex",
+        "cabildo",
+        "otros"
+    ]] = Field(default=None, description="Organismo emisor o fuente oficial del documento")
+
+    anio_publicacion: Optional[int] = Field(
+        default=None,
+        description="Año de publicación del documento. Crítico para ayudas y convocatorias que cambian anualmente"
+    )    
+
 
 llm = ChatOllama(
     model="gemma4:26b",
