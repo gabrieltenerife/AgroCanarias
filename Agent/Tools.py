@@ -1,6 +1,10 @@
+import os
+import subprocess
+
+import pypandoc
 from langchain.tools import tool
 from pydantic import BaseModel, Field
-from typing import Optional, Literal
+from typing import List, Optional, Literal
 from Rag.Retriever import conectar_crhroma
 
 retriever_base = conectar_crhroma()
@@ -125,8 +129,16 @@ class RegistrarTratamientoInput(BaseModel):
     )
 
 
-#class VerificarCuadernoInput(BaseModel):
-    
+class VerificarCuadernoInput(BaseModel):
+    registros: List[dict] = Field(
+        description="Entradas del cuaderno del período a revisar en formato JSON."
+    )
+    tipo_certificacion: Literal["convencional", "integrada", "ecologica", "globalGAP"] = Field(
+        description="Certificación a auditar. Cada una tiene requisitos distintos."
+    )
+    periodo: str = Field(
+        description="Período a auditar. Ej: '2024-Q1' o '2024-01-01/2024-06-30'."
+    )
 
 
 class CalcularPlazosInput(BaseModel):
@@ -267,6 +279,36 @@ def tool_registrar_tratamiento(
     return motor_busqueda_chroma(query, filtros)
 
 
+@tool("verificar_cuaderno", args_schema=VerificarCuadernoInput)
+def tool_verificar_cuaderno(
+    registros: List[dict],
+    tipo_certificacion: str,
+    periodo: str
+) -> str:
+    """
+    Revisa si el cuaderno de campo está completo y correcto para superar una auditoría.
+    Devuelve informe de cumplimiento con entradas incompletas, campos faltantes por entrada
+    y valoración general de si el cuaderno superaría una auditoría estándar.
+    Usar antes de inspecciones GlobalG.A.P., certificación ecológica o revisión DOP.
+    Si el usuario no proporciona la ubicaccion del archivo, debes de preguntar por esta.
+    En todos los casos el formato del archivo sera .docc, por lo que debes de utilizar la herramienta 
+    convertir_doc para convertirlo de doc a docx y a markdown y luego analizar su contenido.
+    
+    Los pasos a seguir son:
+    1. Preguntar al usuario por la ubicación del archivo (si no la proporciona) .docx del cuaderno de campo y localizarlo.
+    2. Utilizar la herramienta convertir_doc para convertir el archivo a markdown.
+    3. Analizar el contenido del markdown y verificar que cumple con los requisitos de la certificación indicada.
+    
+    """
+    query = f"requisitos cuaderno de campo campos obligatorios auditoría {tipo_certificacion}"
+
+    filtros = {
+        "categoria": "cuaderno",
+        "tipo_certificacion": tipo_certificacion
+    }
+    return motor_busqueda_chroma(query, filtros)
+
+
 @tool("calcular_plazos", args_schema=CalcularPlazosInput)
 def tool_calcular_plazos(
     tipo_tramite: str,
@@ -359,6 +401,21 @@ def tool_alertas_plagas_enfermedades(
     }
     return motor_busqueda_chroma(query, filtros)
 
+@tool()
+def convertir_doc(ruta_docx: str): 
+    
+    "convierte un documento de doc a docx a markdown para que el agente pueda leerlo e interpretarlo."
+    
+    subprocess.run([
+        'libreoffice', '--headless', '--convert-to', 'docx', 
+        ruta_docx, '--outdir', os.path.dirname(ruta_docx)
+    ], check=True)
+
+    ruta_docx_convertido = os.path.splitext(ruta_docx)[0] + '.docx'
+    ruta_md = os.path.splitext(ruta_docx_convertido)[0] + '.md'
+
+    pypandoc.convert_file(ruta_docx_convertido, 'gfm', outputfile=ruta_md)
+    return ruta_md
 
 def obtener_tools():
     tools_array = [
@@ -366,9 +423,11 @@ def obtener_tools():
     tool_buscar_fitosanitarios,
     tool_buscar_ayudas,
     tool_registrar_tratamiento,
+    tool_verificar_cuaderno,
     tool_calcular_plazos,
     tool_verificar_cumplimiento_dop,
     tool_requisitos_exportacion,
     tool_alertas_plagas_enfermedades,
+    convertir_doc
     ]
     return tools_array

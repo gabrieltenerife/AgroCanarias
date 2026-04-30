@@ -32,6 +32,16 @@ async def obtener_herramientas():
                 "TAVILY_API_KEY": api_tavily,
                 "DEFAULT_PARAMETERS": "{\"include_images\": true, \"max_results\": 15, \"search_depth\": \"advanced\"}"
             }
+        },
+         
+         "filesystem": {
+            "transport": "stdio", 
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-filesystem",
+                "/home/inta/Documentos"
+            ]
         }
         
     }

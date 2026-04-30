@@ -1,7 +1,6 @@
 from langgraph.checkpoint.memory import InMemorySaver
 from langchain_ollama import ChatOllama
 from langchain.agents import create_agent
-
 from Agent.Tools import obtener_tools
 
 tools_array = obtener_tools()
@@ -19,4 +18,5 @@ def Agente(tools: list = []):
 
     system_prompt = system_prompt
     )
+
     return agente
