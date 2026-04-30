@@ -345,8 +345,9 @@ def tool_alertas_plagas_enfermedades(
     Devuelve alertas fitosanitarias activas para un cultivo e isla concretos:
     organismos causantes, síntomas de identificación, umbral de tratamiento recomendado
     y métodos de control disponibles.
-    Si incluir_web=True, complementa con búsqueda en ASAJA Canarias, Gobierno de Canarias
-    y MAPA para incluir alertas recientes no ingestadas en la base de conocimiento.
+    Siempre complementa con búsquedas en internet, tanto en ASAJA Canarias, como Gobierno de Canarias
+    y MAPA para incluir alertas recientes no ingestadas en la base de conocimiento. Al realizar busquedas en internet,
+    asegurate de añadir la fecha de la alerta y la fuente de la información.
     Usar cuando el agricultor pregunta por plagas activas o riesgos fitosanitarios actuales.
     """
     query = f"alerta plaga enfermedad {cultivo} {isla} activa tratamiento"
@@ -357,3 +358,17 @@ def tool_alertas_plagas_enfermedades(
         "isla": isla
     }
     return motor_busqueda_chroma(query, filtros)
+
+
+def obtener_tools():
+    tools_array = [
+    obtener_info_rag,
+    tool_buscar_fitosanitarios,
+    tool_buscar_ayudas,
+    tool_registrar_tratamiento,
+    tool_calcular_plazos,
+    tool_verificar_cumplimiento_dop,
+    tool_requisitos_exportacion,
+    tool_alertas_plagas_enfermedades,
+    ]
+    return tools_array
