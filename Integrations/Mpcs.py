@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 import sys
 NPX = "npx.cmd" if sys.platform == "win32" else "npx"
+DOCUMENTS_PATH = "C:\\Users\\gamba\\Documents" if sys.platform == "win32" else "/home/inta/Documentos"
 
 load_dotenv()
 api = os.getenv('Aemet_apiKey')
@@ -42,7 +43,7 @@ async def obtener_herramientas():
                 "args": [
                     "-y",
                     "@modelcontextprotocol/server-filesystem",
-                    "C:\\Users\\gamba\\Documents" 
+                    DOCUMENTS_PATH 
                 ]
             }
         }
