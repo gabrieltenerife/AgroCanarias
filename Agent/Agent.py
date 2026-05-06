@@ -1,7 +1,19 @@
-from langgraph.checkpoint.memory import InMemorySaver
+import os
+import aiosqlite
+
+# WORKAROUND: aiosqlite >= 0.22.0 eliminó el método Connection.is_alive()
+# pero langgraph todavía lo usa. Provoca AttributeError al usar AsyncSqliteSaver.
+if not hasattr(aiosqlite.Connection, "is_alive"):
+    def is_alive_patch(self):
+        return True
+    aiosqlite.Connection.is_alive = is_alive_patch
+
+from Agent.Tools import obtener_tools
 from langchain_ollama import ChatOllama
 from langchain.agents import create_agent
-from Agent.Tools import obtener_tools
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+
+SQLITE_PATH = os.path.join("Memory/memoria_agente.sqlite")
 
 tools_array = obtener_tools()
 
@@ -108,15 +120,17 @@ Si una herramienta no devuelve resultado, respondes: "No he encontrado informaci
 - Si el usuario pregunta algo fuera del ámbito agrícola canario, lo indicas con amabilidad y reconduces la conversación.
 """
 
-def Agente(tools: list = []):
+async def Agente(tools: list = []):
     modelo = ChatOllama(model="gemma4:26b", num_ctx=100000)
-    agente = create_agent(
     
-    model=modelo,
-    tools= tools + tools_array,
-    checkpointer=InMemorySaver(),
-
-    system_prompt = system_prompt
+    conn = await aiosqlite.connect(SQLITE_PATH)
+    checkpointer = AsyncSqliteSaver(conn)
+    
+    agente = create_agent(
+        model=modelo,
+        tools= tools + tools_array,
+        checkpointer=checkpointer,
+        system_prompt = system_prompt
     )
-
-    return agente
+    
+    return agente, conn

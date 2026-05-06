@@ -1,5 +1,5 @@
-from langchain.messages import HumanMessage
 import asyncio
+from langchain.messages import HumanMessage
 
 from Agent.Agent import Agente
 from Integrations.Mpcs import obtener_herramientas
@@ -28,7 +28,12 @@ async def hablarConChat(agente):
 
 
 
-tools, _, resources = asyncio.run(obtener_herramientas())
-agente = Agente(tools=tools)
+async def main():
+    tools, _, resources = await obtener_herramientas()
+    agente, conn = await Agente(tools=tools)
+    try:
+        await hablarConChat(agente)
+    finally:
+        await conn.close()
 
-asyncio.run(hablarConChat(agente))
+asyncio.run(main())
