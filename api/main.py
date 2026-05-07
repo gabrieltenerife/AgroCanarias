@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from langchain.messages import HumanMessage
 
-from .models import ChatRequest, ConversationHistoryResponse
+from .models import ChatRequest, ConversationHistoryResponse, ConversationMeta, ConversationListResponse, CreateConversationResponse
 from .dependencies import get_agent_and_conn, close_agent_conn
 
 
@@ -36,11 +36,13 @@ async def chat_stream(request: ChatRequest):
             async for event in agent.astream(
                 {"messages": [HumanMessage(request.message)]},
                 config=config,
-                stream_mode="values"
+                stream_mode="messages"
             ):
-                message = event["messages"][-1]
-                content = message.content if hasattr(message, "content") else ""
-                yield f"data: {json.dumps({'type': 'message', 'content': content})}\n\n"
+                message = event[0]
+                # Solo enviar mensajes del AI, no del usuario
+                if hasattr(message, "content") and message.content:
+                    content = message.content
+                    yield f"data: {json.dumps({'type': 'message', 'content': content})}\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
@@ -63,15 +65,17 @@ async def get_conversation(thread_id: str):
     checkpointer = AsyncSqliteSaver(conn)
 
     config = {"configurable": {"thread_id": thread_id}}
-    checkpoint = await checkpointer.aget_tuple(config)
+    checkpoint = await checkpointer.aget(config)
 
     messages = []
-    if checkpoint:
-        for msg in checkpoint.messages:
-            messages.append({
-                "type": type(msg).__name__,
-                "content": msg.content if hasattr(msg, "content") else str(msg)
-            })
+    if checkpoint and 'channel_values' in checkpoint:
+        cv = checkpoint.get('channel_values', {})
+        if 'messages' in cv:
+            for msg in cv['messages']:
+                messages.append({
+                    "type": type(msg).__name__,
+                    "content": msg.content if hasattr(msg, "content") else str(msg)
+                })
 
     await conn.close()
     return ConversationHistoryResponse(thread_id=thread_id, messages=messages)
@@ -91,3 +95,63 @@ async def delete_conversation(thread_id: str):
     await conn.close()
 
     return {"status": "deleted", "thread_id": thread_id}
+
+
+@app.get("/conversations", response_model=ConversationListResponse)
+async def list_conversations():
+    """Lista todas las conversaciones con su metadata."""
+    
+    from Agent.Agent import SQLITE_PATH
+    import aiosqlite
+    from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+
+    conn = await aiosqlite.connect(SQLITE_PATH)
+    checkpointer = AsyncSqliteSaver(conn)
+    
+    cursor = await conn.execute("""
+        SELECT thread_id, COUNT(*) as total
+        FROM checkpoints 
+        GROUP BY thread_id 
+        ORDER BY MAX(checkpoint_id) DESC
+    """)
+    rows = await cursor.fetchall()
+
+    conversations = []
+    for row in rows:
+        thread_id = row[0]
+        total = row[1]
+        
+        config = {"configurable": {"thread_id": thread_id}}
+        checkpoint = await checkpointer.aget(config)
+        
+        preview = ""
+        title = ""
+        
+        if checkpoint and 'channel_values' in checkpoint:
+            cv = checkpoint.get('channel_values', {})
+            if 'messages' in cv:
+                msgs = cv['messages']
+                if msgs and len(msgs) > 0:
+                    first_msg = msgs[0]
+                    content = first_msg.content if hasattr(first_msg, 'content') else str(first_msg)
+                    if content:
+                        preview = content[:60] + ("..." if len(content) > 60 else "")
+                        title = content[:40] + ("..." if len(content) > 40 else "")
+        
+        conversations.append(ConversationMeta(
+            thread_id=thread_id,
+            title=title or f"Conversación {thread_id[:8]}",
+            preview=preview or "Sin mensajes",
+            message_count=total
+        ))
+
+    await conn.close()
+    return ConversationListResponse(conversations=conversations)
+
+
+@app.post("/conversations", response_model=CreateConversationResponse)
+async def create_conversation():
+    """Crea una nueva conversación y devuelve el thread_id."""
+    import uuid
+    thread_id = f"thread-{uuid.uuid4().hex[:12]}"
+    return CreateConversationResponse(thread_id=thread_id)

@@ -16,3 +16,18 @@ class ConversationHistoryResponse(BaseModel):
     thread_id: str
     messages: list[dict]
 
+
+class ConversationMeta(BaseModel):
+    thread_id: str
+    title: str
+    preview: str
+    message_count: int
+
+
+class ConversationListResponse(BaseModel):
+    conversations: list[ConversationMeta]
+
+
+class CreateConversationResponse(BaseModel):
+    thread_id: str
+

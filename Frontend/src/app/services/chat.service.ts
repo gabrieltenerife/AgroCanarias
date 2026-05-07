@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { Message } from '../models/message.model';
+import { Conversation } from '../components/sidebar/sidebar.component';
 
 const API_URL = 'http://localhost:8000';
 
@@ -7,7 +8,19 @@ const API_URL = 'http://localhost:8000';
 export class ChatService {
   messages = signal<Message[]>([]);
   isLoading = signal(false);
-  threadId = signal('default-thread');
+  threadId = signal<string>('default-thread');
+  conversations = signal<Conversation[]>([]);
+
+  async loadConversations(): Promise<void> {
+    try {
+      const res = await fetch(`${API_URL}/conversations`);
+      if (!res.ok) return;
+      const data = await res.json();
+      this.conversations.set(data.conversations);
+    } catch (e) {
+      console.error('Error loading conversations:', e);
+    }
+  }
 
   async sendMessage(content: string): Promise<void> {
     if (!content.trim() || this.isLoading()) return;
@@ -48,6 +61,7 @@ export class ChatService {
       }
 
       this.messages.update(msgs => [...msgs, { type: 'bot', content: botResponse }]);
+      await this.loadConversations();
     } catch (e) {
       this.messages.update(msgs => [...msgs, { 
         type: 'bot', 
@@ -58,9 +72,25 @@ export class ChatService {
     this.isLoading.set(false);
   }
 
-  newChat(): void {
-    this.threadId.set(`thread-${Date.now()}`);
+  async newChat(): Promise<void> {
+    try {
+      const res = await fetch(`${API_URL}/conversations`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        this.threadId.set(data.thread_id);
+      } else {
+        this.threadId.set(`thread-${Date.now()}`);
+      }
+    } catch {
+      this.threadId.set(`thread-${Date.now()}`);
+    }
     this.messages.set([]);
+    await this.loadConversations();
+  }
+
+  async selectConversation(threadId: string): Promise<void> {
+    this.threadId.set(threadId);
+    await this.loadHistory();
   }
 
   async loadHistory(): Promise<void> {
@@ -76,6 +106,18 @@ export class ChatService {
       this.messages.set(loaded);
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  async deleteConversation(threadId: string): Promise<void> {
+    try {
+      await fetch(`${API_URL}/conversations/${threadId}`, { method: 'DELETE' });
+      this.conversations.update(convs => convs.filter(c => c.thread_id !== threadId));
+      if (this.threadId() === threadId) {
+        await this.newChat();
+      }
+    } catch (e) {
+      console.error('Error deleting conversation:', e);
     }
   }
 }
