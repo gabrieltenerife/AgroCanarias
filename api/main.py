@@ -5,8 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from langchain.messages import HumanMessage
 
-from api.models import ChatRequest, ConversationHistoryResponse
-from api.dependencies import get_agent_and_conn, close_agent_conn
+from .models import ChatRequest, ConversationHistoryResponse
+from .dependencies import get_agent_and_conn, close_agent_conn
 
 
 app = FastAPI(

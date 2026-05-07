@@ -1,0 +1,22 @@
+:root {
+  --primary-green: #4a7c59;
+  --light-green: #8fbc8f;
+  --pale-green: #d4e6d4;
+  --mint-green: #e8f5e9;
+  --dark-green: #2d5a3d;
+  --earth-brown: #5d4037;
+  --sand: #f5f5dc;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, var(--pale-green) 0%, var(--mint-green) 100%);
+  min-height: 100vh;
+  color: var(--dark-green);
+}
