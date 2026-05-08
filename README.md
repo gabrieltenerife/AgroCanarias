@@ -1,4 +1,4 @@
-# AgroCanarias IA
+# AgroCanarias IA — Asistente Técnico IA para Agricultura Canaria
 
 Asistente técnico especializado en agricultura canaria. Resuelve consultas sobre normativa fitosanitaria, cuaderno de campo, ayudas y subvenciones, exportación, denominaciones de origen y planificación meteorológica de tratamientos.
 
