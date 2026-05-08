@@ -2,25 +2,16 @@ import os
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
+from langchain_ollama import ChatOllama
 from langchain_chroma import Chroma
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_classic.retrievers import ParentDocumentRetriever
 from langchain_classic.storage import LocalFileStore
 from langchain_classic.storage._lc_store import create_kv_docstore
-
-from typing import Literal
-from langchain_ollama import ChatOllama
-from lmstudio import llm
 from pydantic import BaseModel, Field
+from typing import Literal, Optional
 
 CHROMA_DIR = "Chroma_db"
 COLLECTION_NAME = "Documents"
-
-from pydantic import BaseModel, Field
-from typing import Literal, Optional
-
-from pydantic import BaseModel, Field
-from typing import Literal, Optional
 
 
 class Metadata(BaseModel):

@@ -29,7 +29,7 @@ async def hablarConChat(agente):
 
 
 async def main():
-    tools, _, resources = await obtener_herramientas()
+    tools, _, _ = await obtener_herramientas()
     agente, conn = await Agente(tools=tools)
     try:
         await hablarConChat(agente)

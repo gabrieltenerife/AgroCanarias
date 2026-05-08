@@ -8,14 +8,11 @@ if not hasattr(aiosqlite.Connection, "is_alive"):
         return True
     aiosqlite.Connection.is_alive = is_alive_patch
 
-from Agent.Tools import obtener_tools
 from langchain_ollama import ChatOllama
 from langchain.agents import create_agent
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 SQLITE_PATH = os.path.join("Memory/memoria_agente.sqlite")
-
-tools_array = obtener_tools()
 
 system_prompt = """
 Eres AgroCanarias IA, un asistente técnico especializado en agricultura canaria. Tu función es ayudar a agricultores individuales, técnicos de cooperativas y responsables de exportación a resolver sus necesidades reales: normativa fitosanitaria, cuaderno de campo, ayudas y subvenciones, exportación, DOP/IGP y planificación meteorológica de tratamientos.
@@ -120,17 +117,21 @@ Si una herramienta no devuelve resultado, respondes: "No he encontrado informaci
 - Si el usuario pregunta algo fuera del ámbito agrícola canario, lo indicas con amabilidad y reconduces la conversación.
 """
 
-async def Agente(tools: list = []):
+async def Agente(tools: list = None):
+    if tools is None:
+        tools = []
+    from Agent.Tools import obtener_tools
+    internal_tools = obtener_tools()
+
     modelo = ChatOllama(model="gemma4:26b", num_ctx=100000)
-    
     conn = await aiosqlite.connect(SQLITE_PATH)
     checkpointer = AsyncSqliteSaver(conn)
-    
+
     agente = create_agent(
         model=modelo,
-        tools= tools + tools_array,
+        tools=tools + internal_tools,
         checkpointer=checkpointer,
-        system_prompt = system_prompt
+        system_prompt=system_prompt
     )
-    
+
     return agente, conn
