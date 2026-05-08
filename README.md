@@ -95,14 +95,6 @@ Tavily_apiKey=<tu_api_key_tavily>
 pip install -r requirements.txt
 ```
 
-> Si no existe `requirements.txt`, instalar manualmente:
-> ```bash
-> pip install fastapi uvicorn langchain langchain-ollama langchain-chroma \
->   langchain-community langchain-text-splitters langchain-classic \
->   langgraph langgraph-checkpoint-sqlite langchain-mcp-adapters \
->   chromadb aiosqlite pypandoc pydantic pydantic-settings python-dotenv
-> ```
-
 ### 4. Construir imagen Docker de AEMET-MCP
 
 ```bash
@@ -198,4 +190,4 @@ PROYECTO/
 
 ## Licencia
 
-Uso interno — proyecto de investigación INTA Canarias.
+Uso interno — CIFP César Manrique proyecto final Gabriel González 
