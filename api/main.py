@@ -68,12 +68,9 @@ async def chat_stream(request: ChatRequest):
 @app.get("/conversations/{thread_id}")
 async def get_conversation(thread_id: str):
     """Obtiene el historial de mensajes de una conversacion."""
-    from Agent.Agent import SQLITE_PATH
-    import aiosqlite
-    from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+    from api.database import get_db
 
-    conn = await aiosqlite.connect(SQLITE_PATH)
-    checkpointer = AsyncSqliteSaver(conn)
+    conn, checkpointer = await get_db()
     config = {"configurable": {"thread_id": thread_id}}
     checkpoint = await checkpointer.aget(config)
 
@@ -94,13 +91,10 @@ async def get_conversation(thread_id: str):
 @app.delete("/conversations/{thread_id}")
 async def delete_conversation(thread_id: str):
     """Elimina una conversacion y su historial."""
-    from Agent.Agent import SQLITE_PATH
-    import aiosqlite
+    from api.database import get_db
 
-    conn = await aiosqlite.connect(SQLITE_PATH)
-    await conn.execute("DELETE FROM checkpoints WHERE thread_id = ?", (thread_id,))
-    await conn.execute("DELETE FROM writes WHERE thread_id = ?", (thread_id,))
-    await conn.commit()
+    conn, checkpointer = await get_db()
+    await checkpointer.adelete_thread(thread_id)
     await conn.close()
 
     return {"status": "deleted", "thread_id": thread_id}
@@ -109,25 +103,16 @@ async def delete_conversation(thread_id: str):
 @app.get("/conversations", response_model=ConversationListResponse)
 async def list_conversations():
     """Lista todas las conversaciones con su metadata."""
-    from Agent.Agent import SQLITE_PATH
-    import aiosqlite
-    from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+    from api.database import get_db
 
-    conn = await aiosqlite.connect(SQLITE_PATH)
-    checkpointer = AsyncSqliteSaver(conn)
+    conn, checkpointer = await get_db()
 
-    cursor = await conn.execute("""
-        SELECT thread_id, COUNT(*) as total
-        FROM checkpoints
-        GROUP BY thread_id
-        ORDER BY MAX(checkpoint_id) DESC
-    """)
-    rows = await cursor.fetchall()
+    thread_ids = set()
+    async for checkpoint_tuple in checkpointer.alist(config=None):
+        thread_ids.add(checkpoint_tuple.config["configurable"]["thread_id"])
 
     conversations = []
-    for row in rows:
-        thread_id = row[0]
-        total = row[1]
+    for thread_id in thread_ids:
         config = {"configurable": {"thread_id": thread_id}}
         checkpoint = await checkpointer.aget(config)
 
@@ -148,7 +133,7 @@ async def list_conversations():
             thread_id=thread_id,
             title=title or f"Conversacion {thread_id[:8]}",
             preview=preview or "Sin mensajes",
-            message_count=total
+            message_count=1
         ))
 
     await conn.close()

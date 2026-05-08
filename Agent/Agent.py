@@ -13,6 +13,7 @@ from langchain.agents import create_agent
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 SQLITE_PATH = os.path.join("Memory/memoria_agente.sqlite")
+os.makedirs("Memory", exist_ok=True)
 
 system_prompt = """
 Eres AgroCanarias IA, un asistente técnico especializado en agricultura canaria. Tu función es ayudar a agricultores individuales, técnicos de cooperativas y responsables de exportación a resolver sus necesidades reales: normativa fitosanitaria, cuaderno de campo, ayudas y subvenciones, exportación, DOP/IGP y planificación meteorológica de tratamientos.
@@ -123,9 +124,10 @@ async def Agente(tools: list = None):
     from Agent.Tools import obtener_tools
     internal_tools = obtener_tools()
 
-    modelo = ChatOllama(model="gemma4:26b", num_ctx=100000)
+    modelo = ChatOllama(model="gemma4:e4b", num_ctx=100000)
     conn = await aiosqlite.connect(SQLITE_PATH)
     checkpointer = AsyncSqliteSaver(conn)
+    await checkpointer.setup()
 
     agente = create_agent(
         model=modelo,
