@@ -12,6 +12,7 @@ from typing import Literal, Optional
 
 CHROMA_DIR = "Chroma_db"
 COLLECTION_NAME = "Documents"
+BATCH_SIZE = 40
 
 
 class Metadata(BaseModel):
@@ -191,8 +192,8 @@ def crear_embeddings():
 def crear_vectorstore(embeddings,documentos):
 
 
-    padre = RecursiveCharacterTextSplitter(chunk_size= 2000, chunk_overlap= 200) 
-    hijo = RecursiveCharacterTextSplitter(chunk_size= 400, chunk_overlap= 50)
+    padre = RecursiveCharacterTextSplitter(chunk_size= 1700, chunk_overlap= 240) 
+    hijo = RecursiveCharacterTextSplitter(chunk_size= 350, chunk_overlap= 80)
 
 
     #Almacen padre
@@ -213,7 +214,11 @@ def crear_vectorstore(embeddings,documentos):
         docstore= create_kv_docstore(DOCUMENTOS_PADRE)
     )
 
-    rag.add_documents(documentos)
+    
+    for i in range(0, len(documentos), BATCH_SIZE):
+        batch = documentos[i:i+BATCH_SIZE]
+        rag.add_documents(batch)
+    
     
     return rag, vectorstore
 
