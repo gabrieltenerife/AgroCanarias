@@ -20,9 +20,9 @@ def _buscar(query: str, filtros: dict = None) -> str:
 
 @tool()
 def obtener_info_rag(pregunta: str):
-    """Esta herramienta se encarga de conectar con ChromaDB, hacer la consulta y devolver la informacion relevante para el agente.
-    Todas las respuestas deben de responderse utilizando esta herramienta exclusivamente y sin inventar informacion.
-    Si la informacion no se encuentra en la base de datos, se debe responder con un mensaje claro indicando que no se encontro informacion relevante."""
+    """Esta herramienta se encarga de conectar con ChromaDB, hacer la consulta y devolver la información relevante para el agente. 
+    Todas las respuestas deben de responderse utilizando esta herramienta exclusivamente y sin inventar informacion. 
+    Si la información no se encuentra en la base de datos, se debe responder con un mensaje claro indicando que no se encontró información relevante."""
     return _buscar(pregunta)
 
 
@@ -335,16 +335,20 @@ def convertir_doc(ruta_docx: str):
     return ruta_md
 
 
-def obtener_tools():
+def obtener_filtros_rag():
     return [
-        obtener_info_rag,
         tool_buscar_fitosanitarios,
         tool_buscar_ayudas,
         tool_registrar_tratamiento,
-        tool_verificar_cuaderno,
         tool_calcular_plazos,
         tool_verificar_cumplimiento_dop,
         tool_requisitos_exportacion,
         tool_alertas_plagas_enfermedades,
-        convertir_doc,
+    ]
+
+def obtener_tools():
+    return [
+        obtener_info_rag,
+        tool_verificar_cuaderno,
+        convertir_doc
     ]

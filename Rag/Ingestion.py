@@ -90,7 +90,7 @@ class Metadata(BaseModel):
 
 
 llm = ChatOllama(
-    model="llama3",
+    model="gemma4:e4b",
     temperature=0
 )
 llm_structured = llm.with_structured_output(Metadata)
@@ -146,7 +146,7 @@ def cargar_documentos(carpeta: str):
                 docs = loader.load()
 
                 # 🔥 EXTRAER METADATA CON LLM (solo primer chunk)
-                texto_base = docs[0].page_content[:1500]
+                texto_base = docs[0].page_content[:2000]
                 metadata_llm = extraer_metadata_llm(texto_base)
 
                 print(f"Metadata detectada para {archivo}: {metadata_llm}")
