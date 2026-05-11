@@ -89,7 +89,7 @@ class Metadata(BaseModel):
 
 
 llm = ChatOllama(
-    model="gemma4:26b",
+    model="llama3",
     temperature=0
 )
 llm_structured = llm.with_structured_output(Metadata)
@@ -97,14 +97,22 @@ llm_structured = llm.with_structured_output(Metadata)
 
 def extraer_metadata_llm(texto: str) -> Metadata:
     prompt = f"""
-    Analiza este documento agrícola y extrae:
+    Analiza este documento agrícola canario y extrae TODOS los campos de metadata:
 
     - categoria: fitosanitario, ayuda, dop, cuaderno, exportacion u otros
     - cultivo: platano, tomate, papa, pimiento u otros
+    - isla: tenerife, gran_canaria, la_palma, lanzarote, fuerteventura, la_gomera, el_hierro, todas, o null si no aplica
+    - tipo_produccion: convencional, integrada, ecologica, o null si no aplica
+    - tipo_certificacion: convencional, integrada, ecologica, globalGAP, o null si no aplica
+    - dop: platano_canarias, papas_antiguas, miel_tenerife, vino_denominacion, otras, o null si no aplica
+    - mercado_destino: union_europea, reino_unido, eeuu, otros, o null si no aplica
+    - organismo: mapa, gobierno_canarias, fega, consejo_regulador, icex, eur_lex, cabildo, otros, o null si no aplica
+    - anio_publicacion: año de publicación del documento, o null si no se puede determinar
 
     IMPORTANTE:
-    - Responde solo con los valores correctos
-    - Si no estás seguro, usa "otros"
+    - Responde SOLO con los valores correctos según el contenido del documento
+    - Si un campo no aplica o no se puede determinar, usa null (no "otros")
+    - Si no estás seguro del cultivo o categoria, usa "otros"
 
     Texto:
     {texto}
@@ -142,10 +150,21 @@ def cargar_documentos(carpeta: str):
 
                 print(f"Metadata detectada para {archivo}: {metadata_llm}")
 
-                # 🔥 AÑADIR METADATA A TODOS LOS DOCS
+                metadata_dict = {
+                    "categoria": metadata_llm.categoria,
+                    "cultivo": metadata_llm.cultivo,
+                    "isla": metadata_llm.isla,
+                    "tipo_produccion": metadata_llm.tipo_produccion,
+                    "tipo_certificacion": metadata_llm.tipo_certificacion,
+                    "dop": metadata_llm.dop,
+                    "mercado_destino": metadata_llm.mercado_destino,
+                    "organismo": metadata_llm.organismo,
+                    "anio_publicacion": metadata_llm.anio_publicacion,
+                }
+                metadata_limpia = {k: v for k, v in metadata_dict.items() if v is not None}
+
                 for doc in docs:
-                    doc.metadata["categoria"] = metadata_llm.categoria
-                    doc.metadata["cultivo"] = metadata_llm.cultivo
+                    doc.metadata.update(metadata_limpia)
 
                 documentos.extend(docs) 
                 archivos_procesados += 1

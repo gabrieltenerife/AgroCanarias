@@ -1,8 +1,12 @@
 import os
+import logging
+
 from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
 from langchain_classic.storage import LocalFileStore
 from langchain_classic.storage._lc_store import create_kv_docstore
+
+logger = logging.getLogger(__name__)
 
 CHROMA_DIR = "Chroma_db"
 COLLECTION_NAME = "Documents"
@@ -61,10 +65,12 @@ def buscar_documentos(query: str, filtros: dict = None, k: int = 4) -> list:
 
     try:
         child_docs = vectorstore.similarity_search(query, **search_kwargs)
-    except Exception:
+    except Exception as e:
+        logger.error("Error en similarity_search query=%r filtros=%r: %s", query, filtros, e)
         return []
 
     if not child_docs:
+        logger.warning("similarity_search devolvio 0 resultados para query=%r filtros=%r", query, filtros)
         return []
 
     parent_ids = set()
@@ -79,9 +85,10 @@ def buscar_documentos(query: str, filtros: dict = None, k: int = 4) -> list:
             parent_docs = [d for d in parent_docs if d is not None]
             if parent_docs:
                 return parent_docs
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error("Error obteniendo parent docs de docstore: %s", e)
 
+    logger.warning("No se encontraron parent docs, devolviendo child docs. parent_ids=%s", parent_ids)
     return child_docs
 
 

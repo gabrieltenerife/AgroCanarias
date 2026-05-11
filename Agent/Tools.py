@@ -298,7 +298,7 @@ def tool_requisitos_exportacion(
     query = f"requisitos exportacion documentacion {producto} {mercado_destino}"
     if tipo_certificacion:
         query += f" {tipo_certificacion}"
-    filtros = {"categoria": "exportacion", "cultivo": producto, "mercado_destino": mercado_destino}
+    filtros = {"categoria": "exportacion", "mercado_destino": mercado_destino}
     return _buscar(query, filtros)
 
 
