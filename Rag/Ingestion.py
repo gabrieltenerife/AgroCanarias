@@ -192,8 +192,8 @@ def crear_embeddings():
 def crear_vectorstore(embeddings,documentos):
 
 
-    padre = RecursiveCharacterTextSplitter(chunk_size= 1700, chunk_overlap= 240) 
-    hijo = RecursiveCharacterTextSplitter(chunk_size= 350, chunk_overlap= 80)
+    padre = RecursiveCharacterTextSplitter(chunk_size= 1500, chunk_overlap= 150) 
+    hijo = RecursiveCharacterTextSplitter(chunk_size= 350, chunk_overlap= 65)
 
 
     #Almacen padre

@@ -54,7 +54,7 @@ def _construir_filtros(filtros_dict: dict | None) -> dict | None:
     return {"$and": [{k: v} for k, v in filtros_limpios.items()]}
 
 
-def buscar_documentos(query: str, filtros: dict = None, k: int = 4) -> list:
+def buscar_documentos(query: str, filtros: dict = None, k: int = 10) -> list:
     vectorstore = get_vectorstore()
     docstore = get_docstore()
 

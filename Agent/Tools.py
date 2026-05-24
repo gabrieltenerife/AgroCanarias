@@ -1,5 +1,6 @@
 import os
 import subprocess
+import datetime as dt
 
 import pypandoc
 from langchain.tools import tool
@@ -10,7 +11,7 @@ from Rag.Retriever import buscar_documentos, format_resultados
 
 def _buscar(query: str, filtros: dict = None) -> str:
     try:
-        docs = buscar_documentos(query, filtros, k=4)
+        docs = buscar_documentos(query, filtros, k=10)
     except Exception as e:
         return f"Error en la base de datos: {e}"
     if not docs:
@@ -232,15 +233,13 @@ def tool_verificar_cuaderno(
     Revisa si el cuaderno de campo esta completo y correcto para superar una auditoria.
     Devuelve informe de cumplimiento con entradas incompletas, campos faltantes por entrada
     y valoracion general de si el cuaderno superaria una auditoria estandar.
-    Usar antes de inspecciones GlobalG.A.P., certificacion ecologica o revision DOP.
-    Si el usuario no proporciona la ubicacion del archivo, debes de preguntar por esta.
     En todos los casos el formato del archivo sera .doc, por lo que debes de utilizar la herramienta
     convertir_doc para convertirlo de doc a docx y a markdown y luego analizar su contenido.
 
     Los pasos a seguir son:
-    1. Preguntar al usuario por la ubicacion del archivo (si no la proporciona) .docx del cuaderno de campo y localizarlo.
-    2. Utilizar la herramienta convertir_doc para convertir el archivo a markdown.
-    3. Analizar el contenido del markdown y verificar que cumple con los requisitos de la certificacion indicada.
+    1. La ubicaccion del archivo siempre sera: /home/inta/Documentos el nombre del archivo sera descriptivo del cuaderno, por ejemplo: "cuaderno_campaña2024.doc" o "cuaderno.doc".
+    2. Utilizar la herramienta convertir_doc para convertir el archivo "doc" a markdown.
+    3. Analizar el contenido del markdown y verificar que cumple las pautas.
     """
     query = f"requisitos cuaderno de campo campos obligatorios auditoria {tipo_certificacion}"
     filtros = {"categoria": "cuaderno", "tipo_certificacion": tipo_certificacion}
@@ -334,6 +333,11 @@ def convertir_doc(ruta_docx: str):
     pypandoc.convert_file(ruta_docx_convertido, 'gfm', outputfile=ruta_md)
     return ruta_md
 
+@tool()
+def obtener_fecha():
+    "Devuelve la fecha actual en formato DD/MM/YYYY. Usar esta herramienta para responder a preguntas sobre la fecha actual o para calcular plazos a partir de la fecha de hoy."
+    return dt.datetime.now().strftime("%d/%m/%Y")
+
 
 def obtener_filtros_rag():
     return [
@@ -350,5 +354,6 @@ def obtener_tools():
     return [
         obtener_info_rag,
         tool_verificar_cuaderno,
-        convertir_doc
+        convertir_doc,
+        obtener_fecha
     ]
