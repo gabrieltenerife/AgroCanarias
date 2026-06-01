@@ -46,15 +46,29 @@ async def chat_stream(request: ChatRequest):
             agent, conn = await get_agent_and_conn(request.thread_id)
             config = {"configurable": {"thread_id": request.thread_id}}
 
+            tool_call_seen = False
+            final_response_sent = False
+
             async for event in agent.astream(
                 {"messages": [HumanMessage(request.message)]},
                 config=config,
                 stream_mode="messages"
             ):
                 message = event[0]
-                if hasattr(message, "content") and message.content:
-                    content = message.content
-                    yield f"data: {json.dumps({'type': 'message', 'content': content})}\n\n"
+
+                if hasattr(message, "type"):
+                    msg_type = message.type
+
+                    if msg_type == "human":
+                        continue
+
+                    if msg_type == "ai":
+                        if tool_call_seen and not final_response_sent:
+                            yield f"data: {json.dumps({'type': 'message', 'content': message.content})}\n\n"
+                            final_response_sent = True
+                            break
+                        elif not tool_call_seen and hasattr(message, "tool_calls") and message.tool_calls:
+                            tool_call_seen = True
 
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"

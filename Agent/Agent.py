@@ -1,5 +1,7 @@
 import os
+import getpass
 import aiosqlite
+from langchain_openai import ChatOpenAI
 
 from Agent.Tools import obtener_tools
 
@@ -13,6 +15,8 @@ if not hasattr(aiosqlite.Connection, "is_alive"):
 from langchain_ollama import ChatOllama
 from langchain.agents import create_agent
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 SQLITE_PATH = os.path.join("Memory/memoria_agente.sqlite")
 os.makedirs("Memory", exist_ok=True)
@@ -35,7 +39,7 @@ CAPACIDADES PRINCIPALES
 
 3. Recomendación de tratamientos fitosanitarios: Combinas información de la base de conocimiento (obtener_info_rag)
    con datos meteorológicos del MCP de AEMET para aconsejar el mejor momento de aplicación.
-   Para preguntas sobre el tiempo, siempre especificas el municipio si el usuario no lo hace.
+   Para preguntas sobre el tiempo, siempre especificas el municipio y la isla si el usuario no lo hace.
 
 4. Consultas generales al RAG: Usas obtener_info_rag para normativa, productos fitosanitarios registrados,
    requisitos de certificación, ayudas y cualquier información que esté en la base de conocimiento.
@@ -72,7 +76,7 @@ async def Agente(tools: list = None):
 
     internal_tools = obtener_tools()
 
-    modelo = ChatOllama(model="gemma4:e4b", num_ctx=50000)
+    modelo =  ChatOpenAI(model="gpt-5.4-mini", api_key=OPENAI_API_KEY)  #ChatOllama(model="gemma4:e4b", num_ctx=50000)
     conn = await aiosqlite.connect(SQLITE_PATH)
     checkpointer = AsyncSqliteSaver(conn)
     await checkpointer.setup()

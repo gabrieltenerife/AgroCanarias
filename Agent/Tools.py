@@ -13,34 +13,49 @@ def obtener_info_rag(pregunta: str):
     Todas las respuestas deben de responderse utilizando esta herramienta exclusivamente y sin inventar informacion.
     Si la información no se encuentra en la base de datos, se debe responder con un mensaje claro indicando que no se encontró información relevante."""
     retriever = conectar_chroma()
-    return retriever.invoke(pregunta)
+    docs = retriever.invoke(pregunta)
+
+    if not docs:
+        return "No se encontró información relevante para esta consulta."
+
+    return "\n\n---\n\n".join(doc.page_content for doc in docs)
 
 
 @tool()
 def verificar_cuaderno():
-    """Audita un cuaderno de campo para comprobar si cumpliria una auditoria.
+    """Audita un cuaderno de campo para comprobar si cumpliría una auditoría.
+    Busca el archivo en C:\\Users\\gamba\\Documentos y verifica que los campos obligatorios
+    estén preenchidos."""
+    ruta_cuaderno = r"C:\Users\gamba\Documentos\modelo_de_cuaderno_de_explotacion.doc"
+    directorio = os.path.dirname(ruta_cuaderno)
 
-    Pasos a seguir:
-    1. Buscar en /home/inta/Documentos el archivo del cuaderno
-       (por ejemplo: modelo_de_cuaderno_de_explotacion.doc).
-    2. Si el archivo esta en formato .doc, utilizar la herramienta convertir_doc
-       para convertirlo a markdown.
-    3. Leer el contenido del archivo convertido y razonar sobre el
-       para evaluar si cumple los requisitos de una auditoria."""
-
-
-@tool()
-def convertir_doc(ruta_docx: str):
-    "convierte un documento de doc a docx a markdown para que el agente pueda leerlo e interpretarlo."
     subprocess.run([
         'libreoffice', '--headless', '--convert-to', 'docx',
-        ruta_docx, '--outdir', os.path.dirname(ruta_docx)
-    ], check=True)
-    ruta_docx_convertido = os.path.splitext(ruta_docx)[0] + '.docx'
-    ruta_md = os.path.splitext(ruta_docx_convertido)[0] + '.md'
-    pypandoc.convert_file(ruta_docx_convertido, 'gfm', outputfile=ruta_md)
-    return ruta_md
+        ruta_cuaderno, '--outdir', directorio
+    ], check=True, capture_output=True)
 
+    ruta_docx = os.path.splitext(ruta_cuaderno)[0] + '.docx'
+    ruta_md = os.path.splitext(ruta_docx)[0] + '.md'
+    pypandoc.convert_file(ruta_docx, 'gfm', outputfile=ruta_md)
+
+    with open(ruta_md, 'r', encoding='utf-8') as f:
+        contenido = f.read()
+
+    lineas = [l.strip() for l in contenido.split('\n') if l.strip()]
+    campos_vacios = []
+
+    for i, linea in enumerate(lineas):
+        if linea.endswith(':'):
+            if i + 1 >= len(lineas):
+                campos_vacios.append(linea)
+            else:
+                siguiente = lineas[i + 1].strip()
+                if not siguiente or siguiente.startswith('#') or siguiente == linea:
+                    campos_vacios.append(linea)
+
+    if campos_vacios:
+        return f"✗ Campos sin preencher: {', '.join(campos_vacios)}"
+    return "✓ Cuaderno completo"
 
 @tool()
 def obtener_fecha():
@@ -52,6 +67,5 @@ def obtener_tools():
     return [
         obtener_info_rag,
         verificar_cuaderno,
-        convertir_doc,
         obtener_fecha
     ]
