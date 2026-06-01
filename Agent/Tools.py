@@ -23,39 +23,43 @@ def obtener_info_rag(pregunta: str):
 
 @tool()
 def verificar_cuaderno():
-    """Audita un cuaderno de campo para comprobar si cumpliría una auditoría.
-    Busca el archivo en C:\\Users\\gamba\\Documentos y verifica que los campos obligatorios
-    estén preenchidos."""
-    ruta_cuaderno = r"C:\Users\gamba\Documentos\modelo_de_cuaderno_de_explotacion.doc"
+    """Lee el cuaderno de campo y devuelve su contenido completo para auditarlo.
+    El archivo está en C:\\Users\\gamba\\Documents\\modelo_de_cuaderno_de_explotacion.doc
+    
+    analiza el contenido devuelto e identifica:
+
+    1. Campos obligatorios que están vacíos o sin rellenar
+    2. Campos con información incompleta o incoherente
+    3. Secciones que faltan por completo
+
+    Presenta el resultado en dos bloques claros:
+    - ✓ Campos correctamente completados
+    - ✗ Campos incompletos o vacíos (con una indicación de qué falta)
+
+    Concluye con una valoración: si el cuaderno pasaría o no una auditoría y por qué.
+    
+    """
+
+    ruta_cuaderno = "C:\\Users\\gamba\\Documents\\modelo_de_cuaderno_de_explotacion.doc"
     directorio = os.path.dirname(ruta_cuaderno)
 
+    # .doc → .docx
     subprocess.run([
-        'libreoffice', '--headless', '--convert-to', 'docx',
+        r'C:\Program Files\LibreOffice\program\soffice.exe', '--headless', '--convert-to', 'docx',
         ruta_cuaderno, '--outdir', directorio
     ], check=True, capture_output=True)
 
     ruta_docx = os.path.splitext(ruta_cuaderno)[0] + '.docx'
+
+    # .docx → .md
     ruta_md = os.path.splitext(ruta_docx)[0] + '.md'
     pypandoc.convert_file(ruta_docx, 'gfm', outputfile=ruta_md)
 
     with open(ruta_md, 'r', encoding='utf-8') as f:
         contenido = f.read()
 
-    lineas = [l.strip() for l in contenido.split('\n') if l.strip()]
-    campos_vacios = []
+    return f"Contenido del cuaderno de campo:\n\n{contenido}"
 
-    for i, linea in enumerate(lineas):
-        if linea.endswith(':'):
-            if i + 1 >= len(lineas):
-                campos_vacios.append(linea)
-            else:
-                siguiente = lineas[i + 1].strip()
-                if not siguiente or siguiente.startswith('#') or siguiente == linea:
-                    campos_vacios.append(linea)
-
-    if campos_vacios:
-        return f"✗ Campos sin preencher: {', '.join(campos_vacios)}"
-    return "✓ Cuaderno completo"
 
 @tool()
 def obtener_fecha():
