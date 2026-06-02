@@ -4,7 +4,9 @@ import datetime as dt
 
 import pypandoc
 from langchain.tools import tool
-from Rag.Retriever import conectar_chroma
+from Rag.Retriever import conectar_chroma, get_fullpdf
+
+GUIA_POR_DEFECTO = "guia_cuaderno.pdf"
 
 
 @tool()
@@ -22,11 +24,13 @@ def obtener_info_rag(pregunta: str):
 
 
 @tool()
-def verificar_cuaderno():
-    """Lee el cuaderno de campo y devuelve su contenido completo para auditarlo.
-    El archivo está en C:\\Users\\gamba\\Documents\\modelo_de_cuaderno_de_explotacion.doc
-    
-    analiza el contenido devuelto e identifica:
+def verificar_cuaderno(guia: str = GUIA_POR_DEFECTO):
+    """Lee el cuaderno de campo y, junto con la guía de auditoría indicada, devuelve ambos contenidos para que los contrastes.
+
+    El cuaderno está en C:\\Users\\gamba\\Documents\\modelo_de_cuaderno_de_explotacion.doc
+    La guía se carga desde la colección de PDFs completos (Data/fullpdf/) por nombre exacto de archivo.
+
+    Analiza el contenido devuelto y, comparándolo con los requisitos de la guía, identifica:
 
     1. Campos obligatorios que están vacíos o sin rellenar
     2. Campos con información incompleta o incoherente
@@ -36,8 +40,7 @@ def verificar_cuaderno():
     - ✓ Campos correctamente completados
     - ✗ Campos incompletos o vacíos (con una indicación de qué falta)
 
-    Concluye con una valoración: si el cuaderno pasaría o no una auditoría y por qué.
-    
+    Concluye con una valoración: si el cuaderno pasaría o no una auditoría y por qué, referenciando la guía.
     """
 
     ruta_cuaderno = "C:\\Users\\gamba\\Documents\\modelo_de_cuaderno_de_explotacion.doc"
@@ -56,9 +59,20 @@ def verificar_cuaderno():
     pypandoc.convert_file(ruta_docx, 'gfm', outputfile=ruta_md)
 
     with open(ruta_md, 'r', encoding='utf-8') as f:
-        contenido = f.read()
+        contenido_cuaderno = f.read()
 
-    return f"Contenido del cuaderno de campo:\n\n{contenido}"
+    contenido_guia = get_fullpdf(guia)
+    if not contenido_guia:
+        return (
+            f"Aviso: no se encontró la guía '{guia}' en la colección FullPDFs. "
+            f"Asegúrate de haberla colocado en Data/fullpdf/ y re-ejecutado la ingestión.\n\n"
+            f"=== CUADERNO DE CAMPO ===\n\n{contenido_cuaderno}"
+        )
+
+    return (
+        f"=== GUÍA DE AUDITORÍA ({guia}) ===\n\n{contenido_guia}\n\n"
+        f"=== CUADERNO DE CAMPO ===\n\n{contenido_cuaderno}"
+    )
 
 
 @tool()

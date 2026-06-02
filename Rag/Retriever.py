@@ -1,27 +1,42 @@
-from langchain_ollama import OllamaEmbeddings
+from dotenv import load_dotenv
+from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
+
+load_dotenv()
 
 CHROMA_DIR = "Chroma_db"
 COLLECTION_NAME = "Documents"
+COLLECTION_FULLPDF = "FullPDFs"
 
-_retriever = None
+_vectorstores = {}
 
 
 def crear_embeddings():
-    return OllamaEmbeddings(
-        model="mxbai-embed-large",
-        base_url="http://localhost:11434",
+    return OpenAIEmbeddings(
+        model="text-embedding-3-small",
     )
+
+
+def _get_vectorstore(collection_name: str):
+    if collection_name not in _vectorstores:
+        _vectorstores[collection_name] = Chroma(
+            embedding_function=crear_embeddings(),
+            persist_directory=CHROMA_DIR,
+            collection_name=collection_name,
+        )
+    return _vectorstores[collection_name]
 
 
 def conectar_chroma():
-    global _retriever
-    if _retriever is not None:
-        return _retriever
-    vectorstore = Chroma(
-        embedding_function=crear_embeddings(),
-        persist_directory=CHROMA_DIR,
-        collection_name=COLLECTION_NAME,
-    )
-    _retriever = vectorstore.as_retriever()
-    return _retriever
+    return _get_vectorstore(COLLECTION_NAME).as_retriever()
+
+
+def conectar_chroma_fullpdfs():
+    return _get_vectorstore(COLLECTION_FULLPDF).as_retriever()
+
+
+def get_fullpdf(filename: str) -> str:
+    vectorstore = _get_vectorstore(COLLECTION_FULLPDF)
+    result = vectorstore.get(where={"source": filename})
+    documents = result.get("documents", []) if isinstance(result, dict) else []
+    return "\n\n".join(documents)
