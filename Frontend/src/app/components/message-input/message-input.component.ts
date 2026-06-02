@@ -7,19 +7,27 @@ import { FormsModule } from '@angular/forms';
   imports: [FormsModule],
   template: `
     <div class="input-container">
-      <input 
-        type="text" 
-        [ngModel]="text()" 
+      <input
+        type="text"
+        [ngModel]="text()"
         (ngModelChange)="text.set($event)"
         (keyup.enter)="onSend()"
         placeholder="¿En qué puedo ayudarte hoy?"
         [disabled]="disabled()"
       />
-      <button (click)="onSend()" [disabled]="disabled()">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-        </svg>
-      </button>
+      @if (streaming()) {
+        <button class="stop-btn" (click)="stop.emit()" title="Detener respuesta">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <rect x="6" y="6" width="12" height="12" rx="2"/>
+          </svg>
+        </button>
+      } @else {
+        <button class="send-btn" (click)="onSend()" [disabled]="disabled()">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        </button>
+      }
     </div>
   `,
   styles: [`
@@ -38,32 +46,38 @@ import { FormsModule } from '@angular/forms';
       transition: all 0.3s ease;
       background: #f8f9fa;
     }
-    input:focus { 
-      border-color: #00b894; 
+    input:focus {
+      border-color: #00b894;
       background: white;
       box-shadow: 0 0 0 3px rgba(0,184,148,0.1);
     }
     input:disabled { background: #f8f9fa; cursor: not-allowed; }
-    button {
+    .send-btn, .stop-btn {
       width: 48px; height: 48px; border: none; border-radius: 50%;
-      background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
       color: white;
       cursor: pointer; transition: all 0.3s ease;
       display: flex; align-items: center; justify-content: center;
     }
-    button:hover:not(:disabled) { 
-      transform: scale(1.05);
-      box-shadow: 0 4px 15px rgba(0,184,148,0.4);
+    .send-btn {
+      background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
     }
-    button:disabled { 
-      background: #b2bec3; cursor: not-allowed; 
+    .stop-btn {
+      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    }
+    .send-btn:hover:not(:disabled), .stop-btn:hover {
+      transform: scale(1.05);
+    }
+    .send-btn:disabled {
+      background: #b2bec3; cursor: not-allowed;
     }
   `]
 })
 export class MessageInputComponent {
   text = signal('');
   disabled = input<boolean>(false);
+  streaming = input<boolean>(false);
   send = output<string>();
+  stop = output<void>();
 
   onSend(): void {
     const value = this.text().trim();

@@ -239,6 +239,8 @@ export class SidebarComponent {
   
   onDelete(event: Event, threadId: string): void {
     event.stopPropagation();
-    this.deleteConversation.emit(threadId);
+    if (window.confirm('¿Eliminar esta conversación?')) {
+      this.deleteConversation.emit(threadId);
+    }
   }
 }

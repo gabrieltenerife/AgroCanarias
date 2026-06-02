@@ -1,7 +1,9 @@
 import os
-import getpass
 import aiosqlite
 from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
+from langchain.agents import create_agent
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from Agent.Tools import obtener_tools
 
@@ -11,10 +13,6 @@ if not hasattr(aiosqlite.Connection, "is_alive"):
     def is_alive_patch(self):
         return True
     aiosqlite.Connection.is_alive = is_alive_patch
-
-from langchain_ollama import ChatOllama
-from langchain.agents import create_agent
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
@@ -72,7 +70,6 @@ LÍMITES
 async def Agente(tools: list = None):
     if tools is None:
         tools = []
-    from Agent.Tools import obtener_tools
 
     internal_tools = obtener_tools()
 

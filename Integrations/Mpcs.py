@@ -71,5 +71,10 @@ async def obtener_herramientas():
 
 async def cerrar_mcp():
     global _mcp_client, _mcp_tools
+    if _mcp_client is not None:
+        try:
+            await _mcp_client.aclose()
+        except Exception as e:
+            print(f"Error cerrando cliente MCP: {e}")
     _mcp_client = None
     _mcp_tools = None

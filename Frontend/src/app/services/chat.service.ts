@@ -11,6 +11,9 @@ export class ChatService {
   threadId = signal<string>('default-thread');
   conversations = signal<Conversation[]>([]);
 
+  private activeController: AbortController | null = null;
+  private isStreaming = signal(false);
+
   async loadConversations(): Promise<void> {
     try {
       const res = await fetch(`${API_URL}/conversations`);
@@ -22,37 +25,73 @@ export class ChatService {
     }
   }
 
+  cancelStream(): void {
+    if (this.activeController) {
+      this.activeController.abort();
+      this.activeController = null;
+    }
+    this.isStreaming.set(false);
+    this.isLoading.set(false);
+  }
+
+  streaming() {
+    return this.isStreaming.asReadonly();
+  }
+
   async sendMessage(content: string): Promise<void> {
     if (!content.trim() || this.isLoading()) return;
+
+    if (this.activeController) {
+      this.activeController.abort();
+      this.activeController = null;
+    }
 
     const input = content.trim();
     this.messages.update(msgs => [...msgs, { type: 'user', content: input }]);
     this.isLoading.set(true);
+    this.isStreaming.set(true);
+
+    const controller = new AbortController();
+    this.activeController = controller;
+    let botResponse = '';
 
     try {
       const response = await fetch(`${API_URL}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input, thread_id: this.threadId() })
+        body: JSON.stringify({ message: input, thread_id: this.threadId() }),
+        signal: controller.signal,
       });
 
       if (!response.ok) throw new Error('Error en conexión');
 
       const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let botResponse = '';
+      const decoder = new TextDecoder('utf-8');
 
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          const text = decoder.decode(value);
+          const text = decoder.decode(value, { stream: true });
           const lines = text.split('\n').filter(l => l.startsWith('data: '));
           for (const line of lines) {
             try {
               const data = JSON.parse(line.slice(6));
               if (data.type === 'message') botResponse += data.content;
               else if (data.type === 'error') botResponse += `\n[Error: ${data.content}]`;
+              else if (data.type === 'done') break;
+            } catch (e) {
+              console.error(e);
+            }
+          }
+        }
+        const tail = decoder.decode();
+        if (tail) {
+          const lines = tail.split('\n').filter(l => l.startsWith('data: '));
+          for (const line of lines) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.type === 'message') botResponse += data.content;
             } catch (e) {
               console.error(e);
             }
@@ -60,19 +99,32 @@ export class ChatService {
         }
       }
 
-      this.messages.update(msgs => [...msgs, { type: 'bot', content: botResponse }]);
-      await this.loadConversations();
-    } catch (e) {
-      this.messages.update(msgs => [...msgs, { 
-        type: 'bot', 
-        content: 'Lo siento, ha ocurrido un error al conectar con el servidor.' 
-      }]);
+      if (this.activeController === controller && botResponse) {
+        this.messages.update(msgs => [...msgs, { type: 'bot', content: botResponse }]);
+        await this.loadConversations();
+      }
+    } catch (e: any) {
+      if (e?.name === 'AbortError') {
+        if (botResponse.length > 0) {
+          this.messages.update(msgs => [...msgs, { type: 'bot', content: botResponse }]);
+        }
+      } else {
+        this.messages.update(msgs => [...msgs, {
+          type: 'bot',
+          content: 'Lo siento, ha ocurrido un error al conectar con el servidor.',
+        }]);
+      }
+    } finally {
+      if (this.activeController === controller) {
+        this.activeController = null;
+      }
+      this.isLoading.set(false);
+      this.isStreaming.set(false);
     }
-
-    this.isLoading.set(false);
   }
 
   async newChat(): Promise<void> {
+    this.cancelStream();
     try {
       const res = await fetch(`${API_URL}/conversations`, { method: 'POST' });
       if (res.ok) {
@@ -89,6 +141,7 @@ export class ChatService {
   }
 
   async selectConversation(threadId: string): Promise<void> {
+    this.cancelStream();
     this.threadId.set(threadId);
     await this.loadHistory();
   }

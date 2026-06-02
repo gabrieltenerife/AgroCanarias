@@ -1,9 +1,11 @@
-import { Component, input, viewChild, ElementRef, effect } from '@angular/core';
+import { Component, ElementRef, OnDestroy, effect, inject, input, viewChild } from '@angular/core';
 import { Message } from '../../models/message.model';
+import { MessageBubbleComponent } from '../message-bubble/message-bubble.component';
 
 @Component({
   selector: 'app-message-list',
   standalone: true,
+  imports: [MessageBubbleComponent],
   template: `
     <div #container class="messages">
       @if (messages().length === 0) {
@@ -20,10 +22,7 @@ import { Message } from '../../models/message.model';
         </div>
       }
       @for (m of messages(); track $index) {
-        <div class="message" [class.user]="m.type === 'user'" [class.bot]="m.type === 'bot'">
-          <div class="avatar">{{ m.type === 'user' ? '👨‍🌾' : '🌿' }}</div>
-          <div class="bubble">{{ m.content }}</div>
-        </div>
+        <app-message-bubble [msg]="m" />
       }
       @if (loading()) {
         <div class="message bot">
@@ -75,29 +74,17 @@ import { Message } from '../../models/message.model';
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     .message { display: flex; align-items: flex-start; gap: 0.75rem; max-width: 80%; }
-    .user { align-self: flex-end; flex-direction: row-reverse; }
     .bot { align-self: flex-start; }
     .avatar {
       width: 40px; height: 40px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 1.2rem; flex-shrink: 0;
-    }
-    .user .avatar { 
-      background: linear-gradient(135deg, #0984e3 0%, #74b9ff 100%);
-    }
-    .bot .avatar { 
       background: linear-gradient(135deg, #00b894 0%, #55efc4 100%);
     }
     .bubble {
-      padding: 0.9rem 1.1rem; border-radius: 18px; line-height: 1.5; white-space: pre-wrap;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    .user .bubble {
-      background: linear-gradient(135deg, #0984e3 0%, #74b9ff 100%);
-      color: white; border-bottom-right-radius: 4px;
-    }
-    .bot .bubble {
+      padding: 0.9rem 1.1rem; border-radius: 18px; line-height: 1.5;
       background: white; color: #2d3436; border-bottom-left-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     .bubble.loading {
       display: flex; gap: 4px; align-items: center;
@@ -114,17 +101,32 @@ import { Message } from '../../models/message.model';
     }
   `]
 })
-export class MessageListComponent {
+export class MessageListComponent implements OnDestroy {
   messages = input.required<Message[]>();
   loading = input.required<boolean>();
 
   container = viewChild<ElementRef<HTMLDivElement>>('container');
 
+  private scrollTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor() {
     effect(() => {
       this.messages();
-      setTimeout(() => this.scrollToBottom(), 100);
+      if (this.scrollTimer !== null) {
+        clearTimeout(this.scrollTimer);
+      }
+      this.scrollTimer = setTimeout(() => {
+        this.scrollToBottom();
+        this.scrollTimer = null;
+      }, 50);
     });
+  }
+
+  ngOnDestroy(): void {
+    if (this.scrollTimer !== null) {
+      clearTimeout(this.scrollTimer);
+      this.scrollTimer = null;
+    }
   }
 
   private scrollToBottom(): void {

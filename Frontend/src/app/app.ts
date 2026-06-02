@@ -25,7 +25,12 @@ import { MessageInputComponent } from './components/message-input/message-input.
           </div>
         </header>
         <app-message-list [messages]="chat.messages()" [loading]="chat.isLoading()" />
-        <app-message-input (send)="chat.sendMessage($event)" [disabled]="chat.isLoading()" />
+        <app-message-input
+          (send)="chat.sendMessage($event)"
+          (stop)="chat.cancelStream()"
+          [disabled]="chat.isLoading()"
+          [streaming]="chat.streaming()()"
+        />
       </main>
     </div>
   `,

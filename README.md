@@ -35,7 +35,7 @@ Combina un agente LLM con un sistema RAG sobre ChromaDB y herramientas MCP exter
 | Componente | Tecnología |
 |---|---|
 | Backend | Python 3.13, FastAPI, Uvicorn |
-| LLM | Ollama (`gemma4:26b`) |
+| LLM | OpenAI (`gpt-5.4-mini`) — ver nota abajo |
 | Framework agente | LangChain, LangGraph |
 | Base vectorial | ChromaDB |
 | Embeddings | Ollama (`mxbai-embed-large`) |
@@ -84,10 +84,17 @@ Crear un archivo `.env` en la raíz del proyecto:
 ```env
 Aemet_apiKey=<tu_api_key_aemet>
 Tavily_apiKey=<tu_api_key_tavily>
+OPENAI_API_KEY=<tu_api_key_openai>
 ```
 
 - **AEMET**: solicitar en [opendata.aemet.es](https://opendata.aemet.es/)
 - **Tavily**: obtener en [tavily.com](https://tavily.com/)
+- **OpenAI**: obtener en [platform.openai.com](https://platform.openai.com/) (necesaria para el LLM por defecto)
+
+> **Nota sobre el modelo LLM**: por defecto la demo usa **OpenAI (`gpt-5.4-mini`)** por simplicidad y calidad de respuesta. Si prefieres usar **Ollama local** (sin necesidad de clave ni conexión), edita `Agent/Agent.py:79`:
+> - Comenta la línea de `ChatOpenAI(...)`
+> - Descomenta la línea de `ChatOllama(model="gemma3:27b", num_ctx=50000)` (usa `gemma3` que sí existe; `gemma4` no está publicado en Ollama)
+> - Asegúrate de tener el modelo descargado: `ollama pull gemma3:27b` y `ollama pull mxbai-embed-large`
 
 ### 3. Instalar dependencias Python
 
